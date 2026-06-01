@@ -25,8 +25,50 @@
       "priority": "high"
     },
     {
+      "url": "https://affpapa.com/feed/",
+      "name": "AffPapa",
+      "enabled": true,
+      "priority": "high"
+    },
+    {
       "url": "https://egr.global/feed/",
       "name": "EGR Global",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://europeangaming.eu/portal/feed/",
+      "name": "European Gaming",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://asiagamingbrief.com/feed/",
+      "name": "Asia Gaming Brief",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://igamingexpress.com/feed/",
+      "name": "iGaming Express",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://insidersport.com/feed/",
+      "name": "Insider Sport",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://www.gamblingnews.com/feed/",
+      "name": "Gambling News",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://next.io/feed/",
+      "name": "Next.io",
       "enabled": true,
       "priority": "medium"
     },
