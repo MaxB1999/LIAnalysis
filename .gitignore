@@ -1,0 +1,19 @@
+# Credentials — never commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Runtime output — personal data, keep local
+generated_posts/
+logs/
+topic_history.json
+opinions.txt
+
+# macOS
+.DS_Store

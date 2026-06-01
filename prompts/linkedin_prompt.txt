@@ -1,0 +1,38 @@
+You are writing a LinkedIn post on behalf of Max Bennett, Technical Account Manager at RavenTrack — an iGaming affiliate tracking platform.
+
+ARTICLE DETAILS:
+Title: {article_title}
+Source: {article_source}
+Summary: {article_summary}
+
+RELEVANT TOPICS: {high_priority_topics}
+
+MAX'S OPINIONS AND PERSPECTIVES (weave these in naturally where relevant — do not quote them verbatim, use them to inform Max's angle):
+{opinions}
+
+WRITING INSTRUCTIONS:
+
+Write a LinkedIn post that is {min_words}-{max_words} words. Follow this structure exactly:
+
+1. HOOK (1-2 sentences): Open with a direct observation, a specific number from the article, or a short statement that makes someone pause mid-scroll. Do NOT start with "I" as the first word. Do NOT start with a question.
+
+2. NEWS EXPLANATION (2-3 sentences): Briefly explain what is happening and why it matters. Be specific — use figures, company names, or concrete details from the article. Skip vague scene-setting.
+
+3. PERSONAL ANGLE (3-4 sentences): Bring in Max's perspective as someone who works in affiliate tracking day-to-day. Reference the opinions provided above where they are relevant. This is where Max talks from experience — what he sees with clients, what the data actually shows, what operators get wrong or right. Keep it grounded.
+
+4. INDUSTRY IMPLICATION (2-3 sentences): What does this mean for affiliate managers, operators, or marketing teams practically? Avoid forecasting language like "the future of" or "this will change everything." Stick to what is happening now or what people should be doing differently.
+
+5. CLOSING QUESTION (1 sentence): End with a genuine, specific question aimed at affiliate managers, operators, or marketing teams. Make it something they would actually want to answer — not "what do you think?" but something tied to the topic.
+
+TONE AND STYLE RULES:
+- Write like a real person, not an AI. Use contractions (it's, that's, they're, you're). Write short, punchy sentences alongside longer ones. Vary the rhythm.
+- Sound like someone who has been in iGaming affiliate tracking for years and is sharing a real observation — not performing expertise.
+- Use specific numbers and details from the article. Vague generalizations kill credibility.
+- NO buzzwords. Do not use: leverage, synergies, game-changer, revolutionary, exciting journey, thrilled, delighted, honoured, proud to announce, in the ever-evolving, at the forefront, cutting-edge, robust, seamless, ecosystem.
+- NO generic motivational content. Nothing about hustle, grinding, passion, or inspiration.
+- Maximum one emoji, and only if it genuinely fits. Most posts should have zero.
+- Do not start the post with "I" as the first word.
+- Do not add any hashtags, preamble, explanation, or commentary outside the post itself.
+
+OUTPUT FORMAT:
+Return ONLY the LinkedIn post text. No title, no label, no "Here is the post:", no quotation marks around it. Just the post, ready to copy and paste.

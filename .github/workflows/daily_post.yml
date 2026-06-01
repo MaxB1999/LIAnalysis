@@ -1,0 +1,220 @@
+# =============================================================================
+# Automated Daily LinkedIn Post Generator — GitHub Actions Workflow
+# =============================================================================
+# Project: RavenTrack LinkedIn Content Automation for Max Bennett
+#          (Technical Account Manager, iGaming affiliate tracking)
+#
+# What this workflow does:
+#   1. Fetches iGaming RSS feeds from igamingbusiness.com, casinobeats.com,
+#      sbcnews.co.uk, and affiliateinsider.com
+#   2. Scores articles by topic relevance (affiliate tracking, attribution, etc.)
+#   3. Detects trending subjects across feeds
+#   4. Generates a 200-300 word LinkedIn post via a local Ollama LLM
+#   5. Runs QA checks (authenticity, readability, LinkedIn suitability — all ≥ 8)
+#   6. Emails the approved post via Gmail SMTP
+#   7. Archives the post to generated_posts/YYYY-MM-DD.txt
+#   8. Uploads daily logs as a workflow artifact (even on failure)
+#
+# Schedule note:
+#   Cron is expressed in UTC. UK time is either GMT (UTC+0) or BST (UTC+1).
+#   - 07:00 UTC = 07:00 GMT (winter, correct)
+#   - 07:00 UTC = 08:00 BST (summer, one hour late)
+#   For a precise 07:00 UK delivery year-round you would need to update the
+#   cron to '0 6 * * *' during BST months (late March → late October), or
+#   use a workaround such as running at 06:00 UTC all year and accepting the
+#   one-hour drift in winter. '0 7 * * *' is kept here as a practical
+#   approximation that is correct in winter and 1 hour late in summer.
+# =============================================================================
+
+name: Daily LinkedIn Post Generator
+
+on:
+  # -------------------------------------------------
+  # Scheduled trigger — runs every day at 07:00 UTC
+  # See schedule note above regarding UK BST/GMT offset
+  # -------------------------------------------------
+  schedule:
+    - cron: '0 7 * * *'
+
+  # -------------------------------------------------
+  # Manual trigger — adds a "Run workflow" button in
+  # the GitHub Actions UI under Actions → this workflow
+  # Useful for testing, debugging, or on-demand posts
+  # -------------------------------------------------
+  workflow_dispatch:
+
+jobs:
+  generate-post:
+    # -------------------------------------------------
+    # Runner: GitHub-hosted Ubuntu (latest LTS).
+    # Free-tier specs: 2-core CPU, ~7 GB RAM, ~14 GB SSD.
+    #
+    # PERFORMANCE WARNING:
+    #   llama3 (8B parameters, ~4-5 GB VRAM/RAM) is usable on this
+    #   runner but will be slow — expect 3-8 minutes for inference.
+    #   For faster CI runs, switch MODEL to "mistral" (7B, lighter
+    #   quantisation) by setting the OLLAMA_MODEL secret or editing
+    #   the env block below. mistral typically halves inference time
+    #   on CPU-only runners.
+    # -------------------------------------------------
+    runs-on: ubuntu-latest
+
+    # -------------------------------------------------
+    # Environment variables available to all steps.
+    # Sensitive values are pulled from GitHub Secrets
+    # (Settings → Secrets and variables → Actions).
+    #
+    # Required secrets to configure in your repo:
+    #   GMAIL_USER        — sender Gmail address
+    #   GMAIL_APP_PASSWORD — Gmail App Password (not account password)
+    #   RECIPIENT_EMAIL   — destination address for the generated post
+    #
+    # Optional secret:
+    #   OLLAMA_MODEL      — override the model (e.g. "mistral", "gemma")
+    #                       Falls back to "llama3" if not set.
+    # -------------------------------------------------
+    env:
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+      # Use OLLAMA_MODEL secret to override; default is llama3.
+      # Recommended for CI: set OLLAMA_MODEL secret to "mistral"
+      OLLAMA_MODEL: ${{ secrets.OLLAMA_MODEL || 'llama3' }}
+
+    steps:
+      # ---------------------------------------------------------------
+      # Step 1: Checkout repository
+      # Clones the full repo into the runner workspace so all project
+      # files are available: main.py, config.py, config.json, .env
+      # (populated via secrets), rss_sources.json, prompts/, etc.
+      # ---------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # Step 2: Set up Python 3.11
+      # Installs CPython 3.11 and pip. The cache key is derived from
+      # requirements.txt so the pip cache is invalidated automatically
+      # when dependencies change, keeping install times short.
+      # ---------------------------------------------------------------
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ---------------------------------------------------------------
+      # Step 3: Install Ollama
+      # Runs the official Ollama install script, which places the
+      # `ollama` binary at /usr/local/bin/ollama on Linux.
+      # No restart is needed; the binary is available immediately.
+      # ---------------------------------------------------------------
+      - name: Install Ollama
+        run: |
+          # Download and execute the official install script.
+          # -fsSL: fail silently on server errors, follow redirects, silent mode.
+          curl -fsSL https://ollama.com/install.sh | sh
+
+      # ---------------------------------------------------------------
+      # Step 4: Start Ollama service
+      # `ollama serve` starts the local API server (default: localhost:11434).
+      # It is launched in the background (&) so the step does not block.
+      # The 5-second sleep gives the server time to initialise before
+      # subsequent steps attempt to pull a model or run inference.
+      # ---------------------------------------------------------------
+      - name: Start Ollama service
+        run: |
+          # Start the Ollama HTTP server in the background.
+          ollama serve &
+
+          # Brief pause to allow the server to bind to its port and
+          # become ready to accept requests. Increase to 10s if you
+          # see "connection refused" errors in the pull step.
+          sleep 5
+
+      # ---------------------------------------------------------------
+      # Step 5: Pull the Ollama model
+      # Downloads the model weights from the Ollama registry.
+      # The model is determined by the OLLAMA_MODEL env var (set above).
+      # First pull downloads the full weights (~4 GB for llama3,
+      # ~4 GB for mistral). Subsequent runs reuse the runner's layer
+      # cache IF the runner is self-hosted. On ephemeral GitHub-hosted
+      # runners the model is re-downloaded every run — consider a
+      # self-hosted runner if download time becomes a bottleneck.
+      #
+      # Lighter alternatives if llama3 is too slow or large:
+      #   mistral   — faster inference, similar quality for this task
+      #   gemma     — Google's model, smallest footprint of the three
+      # ---------------------------------------------------------------
+      - name: Pull Ollama model
+        run: |
+          echo "Pulling model: ${OLLAMA_MODEL}"
+          ollama pull "${OLLAMA_MODEL}"
+
+      # ---------------------------------------------------------------
+      # Step 6: Install Python dependencies
+      # Installs all packages listed in requirements.txt into the
+      # Python 3.11 environment. The pip cache (configured in Step 2)
+      # avoids re-downloading unchanged packages across runs.
+      # ---------------------------------------------------------------
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ---------------------------------------------------------------
+      # Step 7: Write .env file from GitHub Secrets
+      # The application reads credentials from a .env file via
+      # config.py. On the runner there is no committed .env (it should
+      # be in .gitignore). This step synthesises it from secrets so
+      # the app behaves identically to a local run.
+      # ---------------------------------------------------------------
+      - name: Write .env from secrets
+        run: |
+          printf "GMAIL_USER=%s\nGMAIL_APP_PASSWORD=%s\nRECIPIENT_EMAIL=%s\n" \
+            "${GMAIL_USER}" "${GMAIL_APP_PASSWORD}" "${RECIPIENT_EMAIL}" > .env
+
+      # ---------------------------------------------------------------
+      # Step 8: Run the LinkedIn post generator
+      # Executes main.py which orchestrates the full pipeline:
+      #   - Fetch and parse RSS feeds (rss_sources.json)
+      #   - Score articles by topic relevance
+      #   - Detect trending subjects; avoid repeats (topic_history.json)
+      #   - Render Jinja2 prompt (prompts/linkedin_prompt.txt)
+      #   - Call Ollama API (localhost:11434) to generate post
+      #   - QA: authenticity, readability, linkedin_suitability ≥ 8
+      #     Regenerates up to the configured retry limit if any score < 8
+      #   - Email approved post via Gmail SMTP
+      #   - Archive to generated_posts/YYYY-MM-DD.txt
+      #   - Write logs to logs/YYYY-MM-DD.log
+      #
+      # Exit code 0 = success; non-zero = failure (step fails the job).
+      # ---------------------------------------------------------------
+      - name: Generate and send LinkedIn post
+        run: |
+          python main.py
+
+      # ---------------------------------------------------------------
+      # Step 9: Upload logs as workflow artifact
+      # Captures all files in the logs/ directory and attaches them to
+      # the workflow run so you can inspect what happened even after
+      # the runner is recycled.
+      #
+      # if: always() — this step runs whether the previous steps
+      # succeeded or failed. This is critical: if main.py crashes, you
+      # still want to retrieve the log file to diagnose the error.
+      #
+      # Retention: logs are kept for 7 days to limit storage usage.
+      # Increase retention-days if you need a longer audit trail.
+      # ---------------------------------------------------------------
+      - name: Upload logs as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-post-logs-${{ github.run_id }}
+          path: logs/
+          # Keep logs for 7 days; adjust to taste (max 90 on free tier)
+          retention-days: 7
+          # Do not fail the upload step if logs/ is empty (e.g. very
+          # early crash before the logger initialised)
+          if-no-files-found: warn

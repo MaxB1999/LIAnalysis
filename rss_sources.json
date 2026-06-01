@@ -1,0 +1,46 @@
+{
+  "sources": [
+    {
+      "url": "https://igamingbusiness.com/feed/",
+      "name": "iGaming Business",
+      "enabled": true,
+      "priority": "high"
+    },
+    {
+      "url": "https://casinobeats.com/feed/",
+      "name": "Casino Beats",
+      "enabled": true,
+      "priority": "high"
+    },
+    {
+      "url": "https://sbcnews.co.uk/feed/",
+      "name": "SBC News",
+      "enabled": true,
+      "priority": "high"
+    },
+    {
+      "url": "https://affiliateinsider.com/feed/",
+      "name": "Affiliate Insider",
+      "enabled": true,
+      "priority": "high"
+    },
+    {
+      "url": "https://egr.global/feed/",
+      "name": "EGR Global",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://calvinayre.com/feed/",
+      "name": "Calvin Ayre",
+      "enabled": true,
+      "priority": "medium"
+    },
+    {
+      "url": "https://www.gambling.com/news/rss",
+      "name": "Gambling.com",
+      "enabled": false,
+      "priority": "medium"
+    }
+  ]
+}
