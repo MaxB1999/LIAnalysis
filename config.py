@@ -66,6 +66,11 @@ GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", "")
 # Can be the same as GMAIL_USER (send-to-self) or a separate inbox.
 RECIPIENT_EMAIL: str = os.getenv("RECIPIENT_EMAIL", "")
 
+# Pexels API key for fetching a relevant image to include in the email.
+# Free to obtain at pexels.com/api — 200 requests/hour on the free tier.
+# Leave blank to skip image fetching (posts still generate and send fine).
+PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY", "")
+
 
 # ===========================================================================
 # 2. OLLAMA / LLM
